@@ -1,6 +1,8 @@
 #include <bits/stdc++.h>
 using namespace std;
 
+map<string, string> op_map;
+int pc = 0;
 
 int binaryToDec(string binary);
 int decStringToInt(string decString);
