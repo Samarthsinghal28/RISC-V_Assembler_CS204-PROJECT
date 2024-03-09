@@ -51,9 +51,7 @@ string rFormatCommands(string line)
 
     machine_code = "0x" + binToHexa((func7 + rs2 + rs1 + func3 + rd + op));
 
-    string PC = decToBinary(programCounter);
-
-    PC = binToHexa(PC);
+    string PC = binToHexa(decToBinary(programCounter));
 
     machine_code = "0x" + PC + "     " + machine_code;
     programCounter += 4;
@@ -69,7 +67,7 @@ string uFormatCommands(string line)
     string word;
     instruction >> word;
     string risc_code;
-    risc_code = op_map.find(word)->second; // for add, 0000000 000 0110011(func7func3opcode)
+    risc_code = map_op.find(word)->second; // for add, 0000000 000 0110011(func7func3opcode)
     int reg, imm;
     char ones, tens;
     instruction >> word;
@@ -80,55 +78,45 @@ string uFormatCommands(string line)
         reg = 10 * tens + ones;
     }
     
-    string dup_imm, x;
-    stringstream DUPLICATE_instruction(line);
-    DUPLICATE_instruction >> x;
-    DUPLICATE_instruction >> x;
-    DUPLICATE_instruction >> dup_imm;
-    int dup_imm_start = (int)dup_imm[0];
+    instruction >> word;
+    int imm_begin = (int)word[0];
     
-    if (dup_imm.substr(0, 2) == "0b")
-    { // positive binary
-        dup_imm = dup_imm.substr(2, (dup_imm.length()) - 2);
-        imm = binToDec(dup_imm);
-        if (imm > 1048575){
+    if (word.substr(0, 2) == "0b"){ // positive binary
+        word = word.substr(2, word.length());
+        if (word.length()>20){
             cout <<  "Immediate value ( " << imm << " ) out of range " << endl;
             exit(0);
         }
+        imm = binToDec(word);
     }
-    else if (dup_imm.substr(0, 2) == "0x")
-    { // positive hexadecimal
-        dup_imm = dup_imm.substr(2, (dup_imm.length()) - 2);
-
+    else if (word.substr(0, 2) == "0x"){ // positive hexadecimal
+        word = word.substr(2, word.length());
         stringstream ss;
-        ss << hex << dup_imm;
+        ss << hex << word;
         ss >> imm;
         if (imm > 1048575){
             cout <<  "Immediate value ( " << imm << " ) out of range " << endl;
             exit(0);
         }
     }
-    else if (dup_imm_start <= 57 && dup_imm_start >= 48)
-    {
-
-        instruction >> imm;
-        if (imm> 1048575)
-        {
+    else if (imm_begin <= 57 && imm_begin >= 48){
+        stringstream dummy(word);
+        dummy >> imm;
+        if (imm> 1048575){
             cout << "Immediate value ( " << imm << " ) out of range " << endl;
             exit(0);
         } 
     }
-    if(reg<0 || reg>=32){
+    if(reg<0 || reg>31){
         cout<<"Invalid register numbers given"<<endl;
         exit(0);
     } 
-    if (instruction >> word)
-    {
+    if (instruction >> word){
         cout << "error : got three arguments(expected 2)." << endl;
         exit(0);
     } 
 
-    string machine_code, rout, imme, imme_20, imme_11, imme_10_to_1, imme_19_to_12, op;
+    string machine_code, rout, imme, op;
 
     imme = convertToLength20(decToBinary(imm));
     rout = convertToLength5(decToBinary(reg));
@@ -139,10 +127,10 @@ string uFormatCommands(string line)
     machine_code = binToHexa(machine_code);
     machine_code = "0x" + machine_code;
 
-    string PC = binToHexa(decToBinary(pc));
+    string PC = binToHexa(decToBinary(programCounter));
 
     machine_code = "0x" + PC + "     " + machine_code;
-    pc += 4;
+    programCounter += 4;
     return machine_code;
 }
 
