@@ -60,3 +60,89 @@ string rFormatCommands(string line)
     return machine_code;
 }
 
+string uFormatCommands(string line)
+{
+    // lui x4,0x12AB7
+    //x4 = value<<12   0x12AB7237
+    //   imm[31:12](20)      rd(5)      opcode(7)
+    stringstream instruction(line);
+    string word;
+    instruction >> word;
+    string risc_code;
+    risc_code = op_map.find(word)->second; // for add, 0000000 000 0110011(func7func3opcode)
+    int reg, imm;
+    char ones, tens;
+    instruction >> word;
+    tens = (int)word[1] - 48;
+    reg = tens;
+    ones = (int)word[2] - 48;
+    if (ones < 10 && ones >= 0){
+        reg = 10 * tens + ones;
+    }
+    
+    string dup_imm, x;
+    stringstream DUPLICATE_instruction(line);
+    DUPLICATE_instruction >> x;
+    DUPLICATE_instruction >> x;
+    DUPLICATE_instruction >> dup_imm;
+    int dup_imm_start = (int)dup_imm[0];
+    
+    if (dup_imm.substr(0, 2) == "0b")
+    { // positive binary
+        dup_imm = dup_imm.substr(2, (dup_imm.length()) - 2);
+        imm = binToDec(dup_imm);
+        if (imm > 1048575){
+            cout <<  "Immediate value ( " << imm << " ) out of range " << endl;
+            exit(0);
+        }
+    }
+    else if (dup_imm.substr(0, 2) == "0x")
+    { // positive hexadecimal
+        dup_imm = dup_imm.substr(2, (dup_imm.length()) - 2);
+
+        stringstream ss;
+        ss << hex << dup_imm;
+        ss >> imm;
+        if (imm > 1048575){
+            cout <<  "Immediate value ( " << imm << " ) out of range " << endl;
+            exit(0);
+        }
+    }
+    else if (dup_imm_start <= 57 && dup_imm_start >= 48)
+    {
+
+        instruction >> imm;
+        if (imm> 1048575)
+        {
+            cout << "Immediate value ( " << imm << " ) out of range " << endl;
+            exit(0);
+        } 
+    }
+    if(reg<0 || reg>=32){
+        cout<<"Invalid register numbers given"<<endl;
+        exit(0);
+    } 
+    if (instruction >> word)
+    {
+        cout << "error : got three arguments(expected 2)." << endl;
+        exit(0);
+    } 
+
+    string machine_code, rout, imme, imme_20, imme_11, imme_10_to_1, imme_19_to_12, op;
+
+    imme = convertToLength20(decToBinary(imm));
+    rout = convertToLength5(decToBinary(reg));
+
+    op = risc_code;
+
+    machine_code = imme + rout + op;
+    machine_code = binToHexa(machine_code);
+    machine_code = "0x" + machine_code;
+
+    string PC = binToHexa(decToBinary(pc));
+
+    machine_code = "0x" + PC + "     " + machine_code;
+    pc += 4;
+    return machine_code;
+}
+
