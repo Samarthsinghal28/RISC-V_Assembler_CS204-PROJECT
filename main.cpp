@@ -1,7 +1,7 @@
 
 #include <bits/stdc++.h>
 #include "formats.cpp"
-#include "functions.h"
+
 
 using namespace std;
 
