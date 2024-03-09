@@ -51,9 +51,9 @@ string rFormatCommands(string line)
 
     machine_code = "0x" + binToHexa((func7 + rs2 + rs1 + func3 + rd + op));
 
-    string PC = binToHexa(decToBinary(programCounter));
+    string PC = "0x" + binToHexa(decToBinary(programCounter));
 
-    machine_code = "0x" + PC + "     " + machine_code;
+    machine_code = PC + "     " + machine_code;
     programCounter += 4;
     return machine_code;
 }
@@ -68,7 +68,7 @@ string uFormatCommands(string line)
     instruction >> word;
     string risc_code;
     risc_code = map_op.find(word)->second; // for add, 0000000 000 0110011(func7func3opcode)
-    int reg, imm;
+    int reg, immed;
     char ones, tens;
     instruction >> word;
     tens = (int)word[1] - 48;
@@ -84,26 +84,26 @@ string uFormatCommands(string line)
     if (word.substr(0, 2) == "0b"){ // positive binary
         word = word.substr(2, word.length());
         if (word.length()>20){
-            cout <<  "Immediate value ( " << imm << " ) out of range " << endl;
+            cout <<  "Immediate value ( " << immed << " ) out of range " << endl;
             exit(0);
         }
-        imm = binToDec(word);
+        immed = binToDec(word);
     }
     else if (word.substr(0, 2) == "0x"){ // positive hexadecimal
         word = word.substr(2, word.length());
         stringstream ss;
         ss << hex << word;
-        ss >> imm;
-        if (imm > 1048575){
-            cout <<  "Immediate value ( " << imm << " ) out of range " << endl;
+        ss >> immed;
+        if (immed > 1048575){
+            cout <<  "Immediate value ( " << immed << " ) out of range " << endl;
             exit(0);
         }
     }
     else if (imm_begin <= 57 && imm_begin >= 48){
         stringstream dummy(word);
-        dummy >> imm;
-        if (imm> 1048575){
-            cout << "Immediate value ( " << imm << " ) out of range " << endl;
+        dummy >> immed;
+        if (immed> 1048575){
+            cout << "Immediate value ( " << immed << " ) out of range " << endl;
             exit(0);
         } 
     }
@@ -116,20 +116,18 @@ string uFormatCommands(string line)
         exit(0);
     } 
 
-    string machine_code, rout, imme, op;
+    string machine_code, rd, imm, op;
 
-    imme = convertToLength20(decToBinary(imm));
-    rout = convertToLength5(decToBinary(reg));
+    imm = convertToLength20(decToBinary(immed));
+    rd = convertToLength5(decToBinary(reg));
 
     op = risc_code;
 
-    machine_code = imme + rout + op;
-    machine_code = binToHexa(machine_code);
-    machine_code = "0x" + machine_code;
+    machine_code = "0x" + binToHexa(imm + rd + op);
 
-    string PC = binToHexa(decToBinary(programCounter));
+    string PC = "0x" + binToHexa(decToBinary(programCounter));
 
-    machine_code = "0x" + PC + "     " + machine_code;
+    machine_code = PC + "     " + machine_code;
     programCounter += 4;
     return machine_code;
 }
