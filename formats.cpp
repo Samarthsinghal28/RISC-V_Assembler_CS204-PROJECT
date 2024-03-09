@@ -14,7 +14,7 @@ string rFormatCommands(string line)
     string word;
     instruction >> word;
     string risc_code;
-    risc_code = op_map.find(word)->second; // for add, 0000000 000 0110011(func7func3opcode)
+    risc_code = map_op.find(word)->second; // for add, 0000000 000 0110011(func7func3opcode)
     int r1, r2, r3;
     int temp;
     char ones, tens;
@@ -51,12 +51,12 @@ string rFormatCommands(string line)
 
     machine_code = "0x" + binToHexa((func7 + rs2 + rs1 + func3 + rd + op));
 
-    string PC = decToBinary(pc);
+    string PC = decToBinary(programCounter);
 
     PC = binToHexa(PC);
 
     machine_code = "0x" + PC + "     " + machine_code;
-    pc += 4;
+    programCounter += 4;
     return machine_code;
 }
 
