@@ -168,17 +168,17 @@ string ujFormatCommands(string l)
         exit(0);
     }
 
-    string dup_imm, x;
-    stringstream DUPLICATE_instruction(l);
-    DUPLICATE_instruction >> x;
-    DUPLICATE_instruction >> x;
-    DUPLICATE_instruction >> dup_imm;
-    int dup_imm_start = (int)dup_imm[0];
+    string imm2, x;
+    stringstream instruction2(l);
+    instruction2 >> x;
+    instruction2 >> x;
+    instruction2 >> imm2;
+    int imm2_start = (int)imm2[0];
     
-    if (dup_imm.substr(0, 2) == "0b")
+    if (imm2.substr(0, 2) == "0b")
     { // positive binary
-        dup_imm = dup_imm.substr(2, (dup_imm.length()) - 2);
-        imm = binToDec(dup_imm);
+        imm2 = imm2.substr(2, (imm2.length()) - 2);
+        imm = binToDec(imm2);
         if (imm > 2047)
         {
             cout <<"Immediate is out of range which is"<<imm<< endl;
@@ -190,10 +190,10 @@ string ujFormatCommands(string l)
             exit(0);
         }
     }
-    else if (dup_imm.substr(0, 3) == "-0b")
+    else if (imm2.substr(0, 3) == "-0b")
     { // negative binary
-        dup_imm = dup_imm.substr(3, (dup_imm.length()) - 3);
-        imm = binToDec(dup_imm);
+        imm2 = imm2.substr(3, (imm2.length()) - 3);
+        imm = binToDec(imm2);
         if (imm > 2047)
         {
             cout <<"Immediate is out of range which is"<<imm<< endl;
@@ -206,12 +206,12 @@ string ujFormatCommands(string l)
         }
         imm*=-1;
     }
-    else if (dup_imm.substr(0, 2) == "0x")
+    else if (imm2.substr(0, 2) == "0x")
     { // positive hexadecimal
-        dup_imm = dup_imm.substr(2, (dup_imm.length()) - 2);
+        imm2 = imm2.substr(2, (imm2.length()) - 2);
 
         stringstream ss;
-        ss << hex << dup_imm;
+        ss << hex << imm2;
         ss >> imm;
         if (imm > 2047)
         {
@@ -224,12 +224,12 @@ string ujFormatCommands(string l)
             exit(0);
         }
     }
-    else if (dup_imm.substr(0, 3) == "-0x")
+    else if (imm2.substr(0, 3) == "-0x")
     { // negative hexadecimal
-        dup_imm = dup_imm.substr(3, (dup_imm.length()) - 3);
+        imm2 = imm2.substr(3, (imm2.length()) - 3);
 
         stringstream ss;
-        ss << hex << dup_imm;
+        ss << hex << imm2;
         ss >> imm;
         if (imm > 2047)
         {
@@ -243,7 +243,7 @@ string ujFormatCommands(string l)
         }
         imm*=-1;
     }
-    else if (dup_imm_start <= 57 && dup_imm_start >= 48)
+    else if (imm2_start <= 57 && imm2_start >= 48)
     {
 
         instruction >> imm;
@@ -268,7 +268,7 @@ string ujFormatCommands(string l)
             
             stringstream ss(itr->first);
             ss>>lbl;
-            if(lbl==dup_imm){
+            if(lbl==imm2){
                 yatch=1;
                 imm=itr->second;
                 imm=imm-programCounter;
@@ -317,4 +317,271 @@ string ujFormatCommands(string l)
 
     programCounter += 4;
     return machine_code;
+}
+
+string sbFormatCommands(string l)
+{
+    string::iterator j, k;
+    int rs1 = 0, rs2 = 0, rem = 0, imme2 = 0;
+
+    stringstream s(l);
+
+    string i, temp;
+    s >> i;
+    temp = map_op.find(i)->second; 
+
+    s >> i; 
+    string PC = binToHexa(decToBinary(programCounter));
+    if (i.substr(0, 1) != "x")
+    {
+        cout << "error in 0x" << PC << " :register " << i << " not recognised" << endl;
+        exit(0);
+    }
+    string i_check = i.substr(1, i.length() - 1);
+    regex re("[^0-9]");
+    smatch match;
+    if (regex_search(i_check, match, re) == true)
+    { // not decimal
+        cout << "error in 0x" << PC << " :register " << i << " not recognised" << endl;
+        exit(0);
+    }
+    for (j = i.begin() + 1; j != i.end(); j++)
+    {
+        rs2 = 10 *rs2  + ((*j) - 48);
+        rem++;
+    }
+    rem = 0;
+    //cout<<rs2<<endl;
+    if (rs2 > 31 || rs2 < 0)
+    {
+        cout << "error in 0x" << PC << " :register " << i << " not recognised" << endl;
+        exit(0);
+    }
+
+    s >> i; //rs1
+    if (i.substr(0, 1) != "x")
+    {
+        cout << "error in 0x" << PC << " :register " << i << " not recognised" << endl;
+        exit(0);
+    }
+    i_check = i.substr(1, i.length() - 1);
+    regex re1("[^0-9]");
+    smatch match1;
+    if (regex_search(i_check, match1, re1) == true)
+    { 
+        cout << "error in 0x" << PC << " :register " << i << " not recognised" << endl;
+        exit(0);
+    }
+    for (j = i.begin() + 1; j != i.end(); j++)
+    {
+        rs1 = 10 * rs1 + ((*j) - 48);
+        rem++;
+    }
+    rem = 0;
+    if (rs1 > 31 || rs1 < 0)
+    {
+        cout << "error in 0x" << PC << " :register " << i << " not recognised" << endl;
+        exit(0);
+    }
+
+    s >> i; //immed
+    string ii;
+    int imm = 0;
+
+    if (i.length()>=2 && i.substr(0, 2) == "0b")
+    { // positive binary
+        ii = i.substr(2, (i.length()) - 2);
+        imm = binToDec(ii);
+        if (imm > 2047)
+        {
+            cout << "error in 0x" << PC << " :offset is not in range(immediate <= 2047) offset == "<<i<< endl;
+            exit(0);
+        }
+        if (imm == 0)
+        {
+            cout << "error in 0x" << PC << " :infinite loop" << endl;
+            exit(0);
+        }
+    }
+    if (i.length() >= 3&&i.substr(0, 3) == "-0b")
+    { // negative binary
+        ii = i.substr(3, (i.length()) - 3);
+        imm = binToDec(ii);
+        if (imm > 2047)
+        {
+            cout << "error in 0x" << PC << " :offset is not in range(immediate <= 2047) offset == "<<i<< endl;
+            exit(0);
+        }
+        if (imm == 0)
+        {
+            cout << "error in 0x" << PC << " :infinite loop" << endl;
+            exit(0);
+        }
+        imm *= -1;
+    }
+    if (i.length() >= 2&&i.substr(0, 2) == "0x")
+    { // positive hexadecimal
+        ii = i.substr(2, (i.length()) - 2);
+
+        stringstream ss;
+        ss << hex << ii;
+        ss >> imm;
+        if (imm > 2047)
+        {
+            cout << "error in 0x" << PC << " :offset is not in range(immediate <= 2047) offset == "<<i<<endl;
+            exit(0);
+        }
+        if (imm == 0)
+        {
+            cout << "error in 0x" << PC << " :infinite loop" << endl;
+            exit(0);
+        }
+    }
+    if (i.length() >= 3&&i.substr(0, 3) == "-0x")
+    { // negative hexadecimal
+        ii = i.substr(3, (i.length()) - 3);
+
+        stringstream ss;
+        ss << hex << ii;
+        ss >> imm;
+        if (imm > 2047)
+        {
+            cout << "error in 0x" << PC << " :offset " << i << " is not in range" << endl;
+            exit(0);
+        }
+        if (imm == 0)
+        {
+            cout << "error in 0x" << PC << " :infinite loop" << endl;
+            exit(0);
+        }
+        imm *= -1;
+    }
+    else
+    {
+        regex re1("[^0-9]");
+        smatch m1;
+        if (regex_search(i, m1, re1) == false)
+        { // positive decimal
+            stringstream ss2(i);
+            ss2 >> imm;
+            if (imm > 2047)
+            {
+                cout << "error in 0x" << PC << " :offset is not in range(immediate <= 2047) offset == "<<i<< endl;
+                exit(0);
+            }
+            if (imm == 0)
+            {
+                cout << "error in 0x" << PC << " :infinite loop" << endl;
+                exit(0);
+            }
+        }
+        else
+        {
+            string ineg, ineg2;
+            ineg = i.substr(0, 1);
+
+            if (ineg == "-")
+            {
+                ineg2 = i.substr(1, (i.length()) - 1);
+                regex re1("[^0-9]");
+                smatch m1;
+                if (regex_search(ineg2, m1, re1) == false)
+                { // negative decimal
+                    stringstream ss2(ineg2);
+                    ss2 >> imm;
+                    if (imm > 2047)
+                    {
+                        cout << "error in 0x" << PC << " :offset is not in range(immediate <= 2047) offset == "<<i<< endl;
+                        exit(0);
+                    }
+                    if (imm == 0)
+                    {
+                        cout << "error in 0x" << PC << " :infinite loop" << endl;
+                        exit(0);
+                    }
+                    imm *= -1;
+                }
+            }
+            else
+            {            
+                
+                int pc_of_l1, current_pc = programCounter; //assuming pc_of_l1 is the pc of instruction following l1
+                if (label.find(i) == label.end())
+                {
+                    cout << "label : " << i << " not found";
+                    exit(0);
+                }
+                pc_of_l1 = label.find(i)->second;
+                
+                imm = pc_of_l1 - current_pc;
+                if (imm < -2048 || imm > 2047)
+                {
+                    cout << "error in 0x" << PC << " :offset is not in range(immediate <= 2047 && immediate >= -2048) offset == "<<i<< endl;
+                    exit(0);
+                }
+                if (imm == 0)
+                {
+                    cout << "error in 0x" << PC << " :infinite loop" << endl;
+                    exit(0);
+                }
+                
+            }
+        }
+    }
+    if (s >> i)
+    {
+        cout << "error in 0x" << PC << " : got more than three arguments." << endl;
+        exit(0);
+    }
+    string c2;
+    imme2 = imm;
+    if ((imme2 % 2) == 0)
+        ;
+    else
+    {
+        imme2 = imme2 - 1;
+    }
+    imme2 = imme2 >> 1;
+
+    if (imme2 > 0)
+    {
+        c2 = decToBinary(imme2);
+        c2 = convertToLength12(c2);
+        
+    }
+    else
+    {
+        stringstream ss3;
+        ss3 << hex << imme2;
+        string res = ss3.str();
+        string res2;
+        res2 = res.substr(5, 3);
+       
+        c2 = hexaToBinary(res2);
+    }
+    string im1, im2, im3, im4;
+    im1 = c2[0];
+    im2 = c2.substr(2, 6);
+    im3 = c2.substr(8, 4);
+    im4 = c2[1];
+    string a2, b2;
+    a2 = decToBinary(rs2);
+    a2 = convertToLength5(a2); // a2 has rs2 in string form
+    b2 = decToBinary(rs1);
+    b2 = convertToLength5(b2); // b2 has rs1 in string form
+    string f2, op2;
+    f2 = temp.substr(0, 3);  // f2 has func3 in string form
+    op2 = temp.substr(3, 7); // op2 has opcode in string form
+    string machineCode;
+
+    machineCode = im1 + im2 + b2 + a2 + f2 + im3 + im4 + op2; 
+
+    string ans;
+    ans = binToHexa(machineCode);
+    ans = "0x" + ans;
+    
+    string PC2 = binToHexa(decToBinary(programCounter));
+    ans = "0x" + PC2 + "     " + ans;
+    programCounter += 4;
+    return ans;
 }
