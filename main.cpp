@@ -18,8 +18,8 @@ int main(){
     }
     //map_op ready
 
-    asmbl.open("asmbl.asm");        //opening assembly code file
-    machCode.open("mcode.mc");      //opening output code file (mcode.mc) 
+    asmbl.open("inputFile/asmbl.asm");        //opening assembly code file
+    machCode.open("outputFile/mcode.mc");      //opening output code file (outputFile/mcode.mc) 
 
     regex storeData("(.*[^:]):(.*)");      //regular expression for storing data (Eg -- N : .word 5 )
     smatch match;
@@ -157,7 +157,7 @@ int main(){
     programCounter = 0;
     locationAddress = 0;
     
-    asmbl.open("asmbl.asm");            //opening assembly code to load data in memory
+    asmbl.open("inputFile/asmbl.asm");            //opening assembly code to load data in memory
     while (!asmbl.eof()){
 
         getline(asmbl, line);
@@ -345,7 +345,7 @@ int main(){
     temp = 1;
 
     //third parsing to convert the instructions to machine code
-    asmbl.open("asmbl.asm");
+    asmbl.open("inputFile/asmbl.asm");
     while (!asmbl.eof()){
         getline(asmbl, line);
         istringstream inputStr(line);

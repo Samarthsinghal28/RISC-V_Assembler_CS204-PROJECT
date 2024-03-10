@@ -51,11 +51,83 @@ string rFormatCommands(string line)
 
     machine_code = "0x" + binToHexa((func7 + rs2 + rs1 + func3 + rd + op));
 
-    string PC = decToBinary(programCounter);
+    string PC = "0x" + binToHexa(decToBinary(programCounter));
 
-    PC = binToHexa(PC);
+    machine_code = PC + "     " + machine_code;
+    programCounter += 4;
+    return machine_code;
+}
 
-    machine_code = "0x" + PC + "     " + machine_code;
+string uFormatCommands(string line)
+{
+    // lui x4,0x12AB7
+    //x4 = value<<12   0x12AB7237
+    //   imm[31:12](20)      rd(5)      opcode(7)
+    stringstream instruction(line);
+    string word;
+    instruction >> word;
+    string risc_code;
+    risc_code = map_op.find(word)->second; // for add, 0000000 000 0110011(func7func3opcode)
+    int reg, immed;
+    char ones, tens;
+    instruction >> word;
+    tens = (int)word[1] - 48;
+    reg = tens;
+    ones = (int)word[2] - 48;
+    if (ones < 10 && ones >= 0){
+        reg = 10 * tens + ones;
+    }
+    
+    instruction >> word;
+    int imm_begin = (int)word[0];
+    
+    if (word.substr(0, 2) == "0b"){ // positive binary
+        word = word.substr(2, word.length());
+        if (word.length()>20){
+            cout <<  "Immediate value ( " << immed << " ) out of range " << endl;
+            exit(0);
+        }
+        immed = binToDec(word);
+    }
+    else if (word.substr(0, 2) == "0x"){ // positive hexadecimal
+        word = word.substr(2, word.length());
+        stringstream ss;
+        ss << hex << word;
+        ss >> immed;
+        if (immed > 1048575){
+            cout <<  "Immediate value ( " << immed << " ) out of range " << endl;
+            exit(0);
+        }
+    }
+    else if (imm_begin <= 57 && imm_begin >= 48){
+        stringstream dummy(word);
+        dummy >> immed;
+        if (immed> 1048575){
+            cout << "Immediate value ( " << immed << " ) out of range " << endl;
+            exit(0);
+        } 
+    }
+    if(reg<0 || reg>31){
+        cout<<"Invalid register numbers given"<<endl;
+        exit(0);
+    } 
+    if (instruction >> word){
+        cout << "error : got three arguments(expected 2)." << endl;
+        exit(0);
+    } 
+
+    string machine_code, rd, imm, op;
+
+    imm = convertToLength20(decToBinary(immed));
+    rd = convertToLength5(decToBinary(reg));
+
+    op = risc_code;
+
+    machine_code = "0x" + binToHexa(imm + rd + op);
+
+    string PC = "0x" + binToHexa(decToBinary(programCounter));
+
+    machine_code = PC + "     " + machine_code;
     programCounter += 4;
     return machine_code;
 }
