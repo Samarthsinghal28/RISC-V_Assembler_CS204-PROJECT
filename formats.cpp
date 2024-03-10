@@ -653,191 +653,429 @@ string sbFormatCommands(string l)
     programCounter += 4;
     return ans;
 }
-
-string iFormatCommands(string line){
-    // imm[11:0](12) rs1(5) func3(3) rd(5) opcode
-    stringstream instruction(line);
-    string word,type;
-    instruction >> word;
-    type = word;
-    string risc_code;
-    risc_code = map_op.find(word)->second;
-    int r1,r2,immed;
-    int flag=0;
-    char ones, tens;
+string iFormatCommands(string l)
+{
+    ifstream c;
+    map<string, string> code;
+    string::iterator j, k;
+    int rd = 0, rs = 0, rem, imme = 0, flag = 0;
+    string ans, a, fin, f, op;
+    c.open("opcode.txt");
+    string s1, s2, im;
+    while (!c.eof())
+    {
+        c >> s1 >> s2;
+        code.insert(pair<string, string>(s1, s2));
+    }
+    stringstream s(l);
+    string i, temp;
+    s >> i;
+    string word = i;
     string new1, new2;
-
-    instruction >> word;
-    tens = (int)word[1] - 48;
-    r1 = tens;
-    ones = (int)word[2] - 48;
-    if (ones < 10 && ones >= 0){
-        r1 = 10 * tens + ones;
+    temp = code.find(i)->second; //funct3+opcode
+    s >> i;                    //rd
+    rd = 0;
+    for (j = i.begin() + 1; j != i.end(); j++)
+    {
+        rd = 10 * rd + ((int)(*j) - 48);
+        //rem++;
     }
+    rem = 0;
 
-    if (type == "andi" || type == "addi" || type == "ori" || type == "jalr"){
-        instruction >> word; //EXTRACT REGISTER 2
-        tens = (int)word[1] - 48;
-        r2 = tens;
-        ones = (int)word[2] - 48;
-        if (ones < 10 && ones >= 0){
-            r2 = 10 * tens + ones;
-        }
-        instruction >> word; //EXTRACT IMMEDIATE VALUE
-        if(word[0]=='x'){
-            cout<<"The third argument has to be an immediate value,not a register"<<endl;
-            exit(0);
-        }
-        if (word.substr(0, 2) == "0b"){ // positive binary
-            word = word.substr(2, word.length());
-            immed = binToDec(word);
-            if (immed > 2047){
-                cout << "Immediate " << immed << " is not in range" << endl;
-                exit(0);
-            }
-        }
-        else if (word.substr(0, 3) == "-0b"){ // negative binary
-            word = word.substr(3, word.length());
-            immed = binToDec(word);
-            immed*=-1;
-            if (immed < -2048){
-                cout << "Immediate " << immed << " is not in range" << endl;
-                exit(0);
-            }
-        }
-        else if (word.substr(0, 2) == "0x"){ // positive hexadecimal
-            word = word.substr(2, word.length());
-            stringstream ss;
-            ss << hex << word;
-            ss >> immed;
-            if (immed > 2047){
-                cout << "Immediate " << immed << " is not in range" << endl;
-                exit(0);
-            }
-        }
-        else if (word.substr(0, 3) == "-0x"){ // negative hexadecimal
-            word = word.substr(3, word.length());
-            stringstream ss;
-            ss << hex << word;
-            ss >> immed;
-            immed*=-1;
-            if (immed < -2048){
-                cout << "Immediate " << immed << " is not in range" << endl;
-                exit(0);
-            }  
-        }
-        else{     //DECIMAL NUMBERS
-            stringstream dummy(word);      //addi x1,x1,-9
-            dummy >> immed;
-            if (immed > 2047 || immed < -2048){
-                cout << "Immediate " << immed << " is not in range" << endl;
-                exit(0);
-            }
-        }
+    if (word == "andi" || word == "addi" || word == "ori" || word == "jalr") // andi,addi,ori,jalr
+    {
+              s >> i; //rs
+              rs=0;
+              for (j = i.begin() + 1; j != i.end(); j++)
+              {
+                  rs = 10 * rs + ((*j) - 48);
+                  //rem++;
+              }
+              s >> i; //immed
+              if(i[0]=='x'){
+                  cout<<"The third argument has to be an immediate value,not a register"<<endl;
+                  exit(0);
+              }
+              string ii;
+
+             if (i.substr(0, 2) == "0b")
+              { // positive binary
+                      ii = i.substr(2, (i.length()) - 2);
+                      imme = binToDec(ii);
+
+                       if (imme > 2047)
+                     {
+                        cout << "Immediate " << imme << " is not in range" << endl;
+                        exit(0);
+                     }
+                  //imme=ii2;
+              }
+             else if (i.substr(0, 3) == "-0b")
+             { // negative binary
+                      ii = i.substr(3, (i.length()) - 3);
+                      imme = binToDec(ii);
+                      if (imme > 2047)
+                     {
+                        cout << "Immediate " << imme << " is not in range" << endl;
+                        exit(0);
+                     }
+
+                     imme*=-1;
+             }
+             else if (i.substr(0, 2) == "0x")
+             { // positive hexadecimal
+                     ii = i.substr(2, (i.length()) - 2);
+
+                     stringstream ss;
+                     ss << hex << ii;
+                     ss >> imme;
+                     if (imme > 2047)
+                     {
+                         cout << "Immediate " << imme << " is not in range" << endl;
+                         exit(0);
+                     }
+             }
+          else if (i.substr(0, 3) == "-0x")
+           { // negative hexadecimal
+              ii = i.substr(3, (i.length()) - 3);
+
+                  stringstream ss;
+                  ss << hex << ii;
+                  ss >> imme;
+                  if (imme > 2047)
+                  {
+                      cout << "Immediate " << imme << " is not in range" << endl;
+                      exit(0);
+                  }
+                      imme*=-1;
+
+           }
+          else{
+              stringstream st(i);      //addi x1,x1,-9??
+              st>>imme;
+
+          }
+      
+      
     }
-    else if (type == "lb" ||  type == "lw" || type == "lh"){
-        instruction >> word;
-        auto it = word.begin();
-        if(word[0]=='x'|| word[0]=='('){
-            cout<<" no offset/immediate field given"<<endl;
-            exit(0);
-        }
-        else if (*it >= 48 && *it <= 57){
-            immed=0;
-            while ((*it) != '('){
-                immed = (10 * immed) + ((*it) - 48); //offset
-                it++;
+     else if (word == "lb" ||  word == "lw" || word == "lh") //lb,lw,lh
+     {
+        s >> i;
+            j = i.begin();
+            if(i[0]=='x'||i[0]=='('){
+                cout<<" no offset/immediate field given"<<endl;
+                exit(0);
             }
-            
-            it+=2;
-            r2 =0;
-            while ((*it) != ')'){ //lb x1 100(x2)
-                r2 = 10 * r2 + ((*it) - 48);
-                it++;
-            }
-        }
-        else{                //lw x1 var1    
-            flag = 1;
-            string var;
-            stringstream dummy_inst(line);
-            dummy_inst>>var;//lw
-            dummy_inst>>var;//x1
-            new1 = "auipc " + var + " 65536";
-            new2 = uFormatCommands(new1);     //auipc x1 65536
-            dummy_inst>>var;//var1
-            auto itr2 = label.begin();  
-            while (itr2 != label.end()){ 
-                if(itr2->first==var){
-                    tpc=itr2->second;      
+            else if (*j >= 48 && *j <= 57)
+            {
+                imme=0;
+                for (; (*j) != '('; j++)
+                {
+                    imme = (10 * imme) + ((*j) - 48); //offset
+                   // rem++;
                 }
-                itr2++;
+                
+                rs = 0;
+                for (k = j + 2; (*k) != ')'; k++) //lb x1 100(x2)
+                {
+                    rs = 10 * rs + ((*k) - 48);
+                   // rem++;
+                }
             }
-            //offset_of_first_load_inst;
-            if(!ship){
-                immed = tpc-programCounter+4; 
-                ship=1;
-                offset_of_first_load_inst=immed;
-            }
-            else{
-                immed=offset_of_first_load_inst-programCounter; 
-            }
-            stringstream dummy; 
-            dummy<<hex<<immed;
-            string hexv;
-            dummy>>hexv;
-            string im=hexaToBinary(hexv);
-            im=im.substr(im.length()-12, im.length());
-            new2 = new2 + "\r\n"; //result from auipc
-            r2 = r1;
-        }
-    }
-    if(immed <-2047 && immed >=2048){
-       cout<<"Error : immediate ="<<immed<<" is out of range\n";
+             else //lw x1 var1
+              {   
+                  flag = 1;
+                  string var,rd_;
+                  stringstream ss11(l);
+                  ss11>>var;//lw
+                  ss11>>rd_;//x1
+                  ss11>>var;//var1
+                   map<string, int>::iterator itr2; 
+
+                 // cout<<"i am here "<<tpc;
+                  new1 = "auipc "+rd_ + " 65536";
+                  new2 = uFormatCommands(new1);     //auipc x1 65536
+                   map<string, int>::iterator itr;
+
+                  for (itr2 = label.begin(); itr2 != label.end(); ++itr2) { 
+
+                  string lbl;
+                  stringstream ss(itr2->first);
+                  ss>>lbl;
+                  if(itr2->first==var){
+                      tpc=itr2->second;       
+                  }
+
+                  }
+                  //offset_of_first_load_inst;
+                  if(ship==0){
+                  imme = tpc-programCounter+4; 
+                  ship=1;
+                  offset_of_first_load_inst=imme;
+                  }
+                  else{
+                      imme=offset_of_first_load_inst-programCounter; 
+                  }
+                   stringstream ss1; 
+                   ss1<<hex<<imme;
+                  string hexv;
+                  ss1>>hexv;
+                  string im=hexaToBinary(hexv);
+                  reverse(im.begin(),im.end());
+                  im=im.substr(0,12);
+                  reverse(im.begin(),im.end());
+                  //cout<<endl<<endl<<tpc<<endl<<endl;
+                  // // new2=word+" x"+rd+" "+imme+"(x"+rd+")";      //lw x1 -tpc(x1)  offset is -tpc
+                   new2 = new2 + "\r\n"; //result from auipc
+                   rs = rd;
+
+              }
+      }
+    if(imme <-2047 && imme >=2048)
+    {
+       cout<<"Error : immediate ="<<imme<<" is out of range\n";
        exit(0);
     } 
-    if (instruction >> word){
+    if (s >> i)
+    {
         cout << "error :"<< " : got more than three arguments." << endl;
         exit(0);
     }
-    if(r2<0 || r2>31 || r1<0 || r1>31){
+    if(rs<0 || rs>32 || rd<0 || rd>32){
         cout<<"Invalid register numbers given"<<endl;
         exit(0);
     }  
-
-    string machine_code;
-    if(immed<0){
+    if(imme<0){
+       
        stringstream ss; 
-       ss<<hex<<immed;
+       ss<<hex<<imme;
        string hexv;
        ss>>hexv;
-       string im=hexaToBinary(hexv);
-       im=im.substr(im.length()-12, im.length());
-       machine_code+=im;
+       a=hexaToBinary(hexv);
+       reverse(a.begin(),a.end());
+       a=a.substr(0,12);
+       reverse(a.begin(),a.end());
+       ans+=a;
     }
     else{ 
-        string im = decToBinary(immed);
-        im = convertToLength12(im);
-        machine_code += im;
+    a = decToBinary(imme);
+    a = convertToLength12(a);
+    ans += a;
     }
-    string temp;
-    temp = decToBinary(r2);
-    temp = convertToLength5(temp);
-    machine_code += temp;
-    temp = risc_code.substr(0, 3);
-    machine_code += temp;
-    temp = decToBinary(r1);
-    temp = convertToLength5(temp);
-    machine_code += temp;
-    temp = risc_code.substr(3, 7);
-    machine_code += temp;
-    machine_code = "0x" + binToHexa(machine_code);
+    a = decToBinary(rs);
+    a = convertToLength5(a);
+    ans += a;
+    f = temp.substr(0, 3);
+    ans += f;
+    a = decToBinary(rd);
+    a = convertToLength5(a);
+    ans += a;
+    op = temp.substr(3, 7);
+    ans += op;
+    fin = binToHexa(ans);
+    fin = "0x" + fin;
 
     string PC = binToHexa(decToBinary(programCounter));
 
-    machine_code = "0x" + PC + "     " + machine_code;
+    fin = "0x" + PC + "     " + fin;
     programCounter += 4;
-    if (flag){
-        machine_code = new2 + machine_code;
+    if (flag == 0)
+        return fin;
+    else
+    {
+        new2 = new2 + fin;
+        return new2;
     }
-    return machine_code;      
+          
 }
+// string iFormatCommands(string line){
+//     // imm[11:0](12) rs1(5) func3(3) rd(5) opcode
+//     stringstream instruction(line);
+//     string word,type;
+//     instruction >> word;
+//     type = word;
+//     string risc_code;
+//     risc_code = map_op.find(word)->second;
+//     int r1=0,r2=0,immed=0; //R1: RD; R2: RS
+//     int flag=0;
+//     char ones, tens;
+//     string new1, new2;
+
+//     instruction >> word;
+//     tens = (int)word[1] - 48;
+//     r1 = tens;
+//     ones = (int)word[2] - 48;
+//     if (ones < 10 && ones >= 0){
+//         r1 = 10 * tens + ones;
+//     }
+
+//     if (type == "andi" || type == "addi" || type == "ori" || type == "jalr"){
+//         instruction >> word; //EXTRACT REGISTER 2
+//         tens = (int)word[1] - 48;
+//         r2 = tens;
+//         ones = (int)word[2] - 48;
+//         if (ones < 10 && ones >= 0){
+//             r2 = 10 * tens + ones;
+//         }
+//         instruction >> word; //EXTRACT IMMEDIATE VALUE
+//         if(word[0]=='x'){
+//             cout<<"The third argument has to be an immediate value,not a register"<<endl;
+//             exit(0);
+//         }
+//         if (word.substr(0, 2) == "0b"){ // positive binary
+//             word = word.substr(2, (word.length()-2));
+//             immed = binToDec(word);
+//             if (immed > 2047){
+//                 cout << "Immediate " << immed << " is not in range" << endl;
+//                 exit(0);
+//             }
+//         }
+//         else if (word.substr(0, 3) == "-0b"){ // negative binary
+//             word = word.substr(3, (word.length()-3));
+//             immed = binToDec(word);
+//             immed*=-1;
+//             if (immed < -2048){
+//                 cout << "Immediate " << immed << " is not in range" << endl;
+//                 exit(0);
+//             }
+//         }
+//         else if (word.substr(0, 2) == "0x"){ // positive hexadecimal
+//             word = word.substr(2, (word.length()-2));
+//             stringstream ss;
+//             ss << hex << word;
+//             ss >> immed;
+//             if (immed > 2047){
+//                 cout << "Immediate " << immed << " is not in range" << endl;
+//                 exit(0);
+//             }
+//         }
+//         else if (word.substr(0, 3) == "-0x"){ // negative hexadecimal
+//             word = word.substr(3, (word.length()-3));
+//             stringstream ss;
+//             ss << hex << word;
+//             ss >> immed;
+//             immed*=-1;
+//             if (immed < -2048){
+//                 cout << "Immediate " << immed << " is not in range" << endl;
+//                 exit(0);
+//             }  
+//         }
+//         else{     //DECIMAL NUMBERS
+//             stringstream dummy(word);      //addi x1,x1,-9
+//             dummy >> immed;
+//             if (immed > 2047 || immed < -2048){
+//                 cout << "Immediate " << immed << " is not in range" << endl;
+//                 exit(0);
+//             }
+//         }
+//     }
+//     else if (type == "lb" ||  type == "lw" || type == "lh"){
+//         instruction >> word;
+//         auto it = word.begin();
+//         if(word[0]=='x'|| word[0]=='('){
+//             cout<<" no offset/immediate field given"<<endl;
+//             exit(0);
+//         }
+//         else if (*it >= 48 && *it <= 57){
+//             immed=0;
+//             while ((*it) != '('){
+//                 immed = (10 * immed) + ((*it) - 48); //DECIMAL OFFSET GIVEN
+//                 it++;
+//             }
+            
+//             it+=2;
+//             r2 =0;
+//             while ((*it) != ')'){ //lb x1 100(x2)
+//                 r2 = 10 * r2 + ((*it) - 48);
+//                 it++;
+//             }
+//         }
+//         else{                //lw x1 var1    
+//             flag = 1;
+//             string var;
+//             stringstream dummy_inst(line);
+//             dummy_inst>>var;//lw
+//             dummy_inst>>var;//x1
+//             new1 = "auipc " + var + " 65536";
+//             new2 = uFormatCommands(new1);     //auipc x1 65536
+//             dummy_inst>>var;//var1
+//             auto it = label.begin();  
+//             while (it != label.end()){ 
+//                 if(it->first==var){
+//                     tpc=it->second;      
+//                 }
+//                 it++;
+//             }
+//             //offset_of_first_load_inst;
+//             if(!ship){
+//                 immed = tpc-programCounter+4; 
+//                 ship=1;
+//                 offset_of_first_load_inst=immed;
+//             }
+//             else{
+//                 immed=offset_of_first_load_inst-programCounter; 
+//             }
+//             stringstream dummy; 
+//             dummy<<hex<<immed;
+//             string hexv;
+//             dummy>>hexv;
+//             string im=hexaToBinary(hexv);
+//             reverse(im.begin(),im.end());
+//             im=im.substr(0, 12);
+//             reverse(im.begin(),im.end());
+//             new2 = new2 + "\r\n"; //result from auipc
+//             r2 = r1;
+//         }
+//     }
+//     if(immed <-2047 && immed >=2048){
+//        cout<<"Error : immediate ="<<immed<<" is out of range\n";
+//        exit(0);
+//     } 
+//     if (instruction >> word){
+//         cout << "error :"<< " : got more than three arguments." << endl;
+//         exit(0);
+//     }
+//     if(r2<0 || r2>31 || r1<0 || r1>31){
+//         cout<<"Invalid register numbers given"<<endl;
+//         exit(0);
+//     }  
+
+//     string machine_code;
+//     if(immed<0){
+//        stringstream ss; 
+//        ss<<hex<<immed;
+//        string hexv;
+//        ss>>hexv;
+//        string im=hexaToBinary(hexv);
+//        reverse(im.begin(),im.end());
+//        im=im.substr(0, 12);
+//        reverse(im.begin(),im.end());
+//        machine_code+=im;                    //12 BITS IMMEDIATE VALUE
+//     }
+//     else{ 
+//         string im = decToBinary(immed);
+//         im = convertToLength12(im);
+//         machine_code += im;                 //12 BITS IMMEDIATE VALUE
+//     }
+//     string temp;
+//     temp = decToBinary(r2);
+//     temp = convertToLength5(temp);          //5 BITS RS VALUE
+//     machine_code += temp;                 
+//     temp = risc_code.substr(0, 3);          //3 BITS FUNC3 VALUE
+//     machine_code += temp;
+//     temp = decToBinary(r1);
+//     temp = convertToLength5(temp);          //5 BITS RD VALUE
+//     machine_code += temp;
+//     temp = risc_code.substr(3, 7);          //7 BITS OPCODE VALUE
+//     machine_code += temp;
+//     machine_code = "0x" + binToHexa(machine_code);
+
+//     string PC = binToHexa(decToBinary(programCounter));
+
+//     machine_code = "0x" + PC + "     " + machine_code;
+//     programCounter += 4;
+//     if (flag){
+//         machine_code = new2 + machine_code;
+//     }
+//     return machine_code;      
+// }
