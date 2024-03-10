@@ -60,28 +60,27 @@ string rFormatCommands(string line)
 
 string uFormatCommands(string line)
 {
-    // lui x4,0x12AB7
-    //x4 = value<<12   0x12AB7237
-    //   imm[31:12](20)      rd(5)      opcode(7)
     stringstream instruction(line);
     string word;
     instruction >> word;
     string risc_code;
-    risc_code = map_op.find(word)->second; // for add, 0000000 000 0110011(func7func3opcode)
+    risc_code = map_op.find(word)->second; 
     int reg, immed;
     char ones, tens;
     instruction >> word;
     tens = (int)word[1] - 48;
     reg = tens;
     ones = (int)word[2] - 48;
-    if (ones < 10 && ones >= 0){
+    if (ones < 10 && ones >= 0)
+    {
         reg = 10 * tens + ones;
     }
     
     instruction >> word;
     int imm_begin = (int)word[0];
     
-    if (word.substr(0, 2) == "0b"){ // positive binary
+    if (word.substr(0, 2) == "0b")
+    { // positive binary
         word = word.substr(2, word.length());
         if (word.length()>20){
             cout <<  "Immediate value ( " << immed << " ) out of range " << endl;
@@ -89,7 +88,8 @@ string uFormatCommands(string line)
         }
         immed = binToDec(word);
     }
-    else if (word.substr(0, 2) == "0x"){ // positive hexadecimal
+    else if (word.substr(0, 2) == "0x")
+    { // positive hexadecimal
         word = word.substr(2, word.length());
         stringstream ss;
         ss << hex << word;
@@ -99,7 +99,8 @@ string uFormatCommands(string line)
             exit(0);
         }
     }
-    else if (imm_begin <= 57 && imm_begin >= 48){
+    else if (imm_begin <= 57 && imm_begin >= 48)
+    {
         stringstream dummy(word);
         dummy >> immed;
         if (immed> 1048575){
@@ -107,11 +108,13 @@ string uFormatCommands(string line)
             exit(0);
         } 
     }
-    if(reg<0 || reg>31){
+    if(reg<0 || reg>31)
+    {
         cout<<"Invalid register numbers given"<<endl;
         exit(0);
     } 
-    if (instruction >> word){
+    if (instruction >> word)
+    {
         cout << "error : got three arguments(expected 2)." << endl;
         exit(0);
     } 
@@ -152,7 +155,8 @@ string sFormatCommands(string l)
     imme = 0;
     s >> i; //immed
 
-    if(i[0]=='x'||i[0]=='('){
+    if(i[0]=='x'||i[0]=='(')
+    {
         cout<<" no offset/immediate field given"<<endl;
         exit(0);
     }
@@ -215,36 +219,28 @@ string sFormatCommands(string l)
 
 string ujFormatCommands(string l)
 {
-    //jal x2 13
-    //13(odd)=>12=>stored 6  if imm is odd, it is stored as imm/2 and then mutiplied by 2 .So, effectively, imm-1
-    // imm[20]  imm[10:1]   imm [11]   imm [19:12]         rd      opcode
-    //    0     0000000110     0        00000000          00010    1101111
     stringstream instruction(l);
 
     string word;
     instruction >> word;
     string func_and_opcode;
-    func_and_opcode = map_op.find(word)->second; //  0110011(opcode)
+    func_and_opcode = map_op.find(word)->second; 
     int rd, imm = 0;
     char j, i;
     instruction >> word;
-    i = word[1];
-    i = (int)i - 48;
+    i = word[1] - '0';
     rd = i;
-    j = (int)word[2] - 48;
+    j = word[2] - '0';
     if (j < 10 && j >= 0)   rd = 10 * i + j;
 
     if(rd<0 || rd>32)
     {
-        cout<<"Invalid register number range is [0,31]"<<endl;
+        cout<<"Invalid register number. range is [0,31]"<<endl;
         exit(0);
     }
 
-    string imm2, x;
-    stringstream instruction2(l);
-    instruction2 >> x;
-    instruction2 >> x;
-    instruction2 >> imm2;
+    string imm2;
+    instruction >> imm2;
     int imm2_start = (int)imm2[0];
     
     if (imm2.substr(0, 2) == "0b")
@@ -357,8 +353,8 @@ string ujFormatCommands(string l)
 
     string machine_code, rout, imme, imme_20, imme_11, imme_10_to_1, imme_19_to_12, op;
     
-    if(imm<0){
-    //   cout<<"----------negative----------";
+    if(imm<0)
+    {
        stringstream ss; 
        ss<<hex<<imm;
        string hexv;
@@ -367,10 +363,9 @@ string ujFormatCommands(string l)
        reverse(imme.begin(),imme.end());
        imme=imme.substr(0,20);
        reverse(imme.begin(),imme.end());
-      // cout<<imme<<endl;
     }    
 
-    else{imme = convertToLength20(decToBinary(imm));}
+    else    imme = convertToLength20(decToBinary(imm));
     rout = convertToLength5(decToBinary(rd));
 
     op = func_and_opcode;
@@ -413,17 +408,17 @@ string sbFormatCommands(string l)
     regex re("[^0-9]");
     smatch match;
     if (regex_search(i_check, match, re) == true)
-    { // not decimal
+    { 
         cout << "error in 0x" << PC << " :register " << i << " not recognised" << endl;
         exit(0);
     }
     for (j = i.begin() + 1; j != i.end(); j++)
-    {
-        rs2 = 10 *rs2  + ((*j) - 48);
+    {   
+        rs2 *= 10;
+        rs2 += ((*j) - 48);
         rem++;
     }
     rem = 0;
-    //cout<<rs2<<endl;
     if (rs2 > 31 || rs2 < 0)
     {
         cout << "error in 0x" << PC << " :register " << i << " not recognised" << endl;
@@ -446,7 +441,8 @@ string sbFormatCommands(string l)
     }
     for (j = i.begin() + 1; j != i.end(); j++)
     {
-        rs1 = 10 * rs1 + ((*j) - 48);
+        rs1 *= 10;
+        rs1  += ((*j) - 48);
         rem++;
     }
     rem = 0;
@@ -475,7 +471,7 @@ string sbFormatCommands(string l)
             exit(0);
         }
     }
-    if (i.length() >= 3&&i.substr(0, 3) == "-0b")
+    if (i.length() >= 3 && i.substr(0, 3) == "-0b")
     { // negative binary
         ii = i.substr(3, (i.length()) - 3);
         imm = binToDec(ii);
@@ -509,7 +505,7 @@ string sbFormatCommands(string l)
             exit(0);
         }
     }
-    if (i.length() >= 3&&i.substr(0, 3) == "-0x")
+    if (i.length() >= 3 && i.substr(0, 3) == "-0x")
     { // negative hexadecimal
         ii = i.substr(3, (i.length()) - 3);
 
@@ -558,7 +554,7 @@ string sbFormatCommands(string l)
                 regex re1("[^0-9]");
                 smatch m1;
                 if (regex_search(ineg2, m1, re1) == false)
-                { // negative decimal
+                { 
                     stringstream ss2(ineg2);
                     ss2 >> imm;
                     if (imm > 2047)
@@ -636,17 +632,17 @@ string sbFormatCommands(string l)
     im2 = c2.substr(2, 6);
     im3 = c2.substr(8, 4);
     im4 = c2[1];
-    string a2, b2;
-    a2 = decToBinary(rs2);
-    a2 = convertToLength5(a2); // a2 has rs2 in string form
-    b2 = decToBinary(rs1);
-    b2 = convertToLength5(b2); // b2 has rs1 in string form
-    string f2, op2;
-    f2 = temp.substr(0, 3);  // f2 has func3 in string form
-    op2 = temp.substr(3, 7); // op2 has opcode in string form
+    string rs2Str, rs1Str;
+    rs2Str = decToBinary(rs2);
+    rs2Str = convertToLength5(rs2Str); // rs2Str has rs2 in string form
+    rs1Str = decToBinary(rs1);
+    rs1Str = convertToLength5(rs1Str); // rs1Str has rs1 in string form
+    string f3, op;
+    f3 = temp.substr(0, 3);  // f3 has func3 in string form
+    op = temp.substr(3, 7); // op2 has opcode in string form
     string machineCode;
 
-    machineCode = im1 + im2 + b2 + a2 + f2 + im3 + im4 + op2; 
+    machineCode = im1 + im2 + rs1Str + rs2Str + f3 + im3 + im4 + op; 
 
     string ans;
     ans = binToHexa(machineCode);
