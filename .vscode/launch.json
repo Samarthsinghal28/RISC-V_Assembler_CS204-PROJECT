@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "d:/RISC-V_Assembler_CS204-PROJECT",
-      "program": "d:/RISC-V_Assembler_CS204-PROJECT/build/Debug/outDebug",
+      "cwd": "c:/Users/lenovo/Documents/GitHub/RISC-V_Assembler_CS204-PROJECT",
+      "program": "c:/Users/lenovo/Documents/GitHub/RISC-V_Assembler_CS204-PROJECT/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [
