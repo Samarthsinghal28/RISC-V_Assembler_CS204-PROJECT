@@ -653,3 +653,191 @@ string sbFormatCommands(string l)
     programCounter += 4;
     return ans;
 }
+
+string iFormatCommands(string line){
+    // imm[11:0](12) rs1(5) func3(3) rd(5) opcode
+    stringstream instruction(line);
+    string word,type;
+    instruction >> word;
+    type = word;
+    string risc_code;
+    risc_code = map_op.find(word)->second;
+    int r1,r2,immed;
+    int flag=0;
+    char ones, tens;
+    string new1, new2;
+
+    instruction >> word;
+    tens = (int)word[1] - 48;
+    r1 = tens;
+    ones = (int)word[2] - 48;
+    if (ones < 10 && ones >= 0){
+        r1 = 10 * tens + ones;
+    }
+
+    if (type == "andi" || type == "addi" || type == "ori" || type == "jalr"){
+        instruction >> word; //EXTRACT REGISTER 2
+        tens = (int)word[1] - 48;
+        r2 = tens;
+        ones = (int)word[2] - 48;
+        if (ones < 10 && ones >= 0){
+            r2 = 10 * tens + ones;
+        }
+        instruction >> word; //EXTRACT IMMEDIATE VALUE
+        if(word[0]=='x'){
+            cout<<"The third argument has to be an immediate value,not a register"<<endl;
+            exit(0);
+        }
+        if (word.substr(0, 2) == "0b"){ // positive binary
+            word = word.substr(2, word.length());
+            immed = binToDec(word);
+            if (immed > 2047){
+                cout << "Immediate " << immed << " is not in range" << endl;
+                exit(0);
+            }
+        }
+        else if (word.substr(0, 3) == "-0b"){ // negative binary
+            word = word.substr(3, word.length());
+            immed = binToDec(word);
+            immed*=-1;
+            if (immed < -2048){
+                cout << "Immediate " << immed << " is not in range" << endl;
+                exit(0);
+            }
+        }
+        else if (word.substr(0, 2) == "0x"){ // positive hexadecimal
+            word = word.substr(2, word.length());
+            stringstream ss;
+            ss << hex << word;
+            ss >> immed;
+            if (immed > 2047){
+                cout << "Immediate " << immed << " is not in range" << endl;
+                exit(0);
+            }
+        }
+        else if (word.substr(0, 3) == "-0x"){ // negative hexadecimal
+            word = word.substr(3, word.length());
+            stringstream ss;
+            ss << hex << word;
+            ss >> immed;
+            immed*=-1;
+            if (immed < -2048){
+                cout << "Immediate " << immed << " is not in range" << endl;
+                exit(0);
+            }  
+        }
+        else{     //DECIMAL NUMBERS
+            stringstream dummy(word);      //addi x1,x1,-9
+            dummy >> immed;
+            if (immed > 2047 || immed < -2048){
+                cout << "Immediate " << immed << " is not in range" << endl;
+                exit(0);
+            }
+        }
+    }
+    else if (type == "lb" ||  type == "lw" || type == "lh"){
+        instruction >> word;
+        auto it = word.begin();
+        if(word[0]=='x'|| word[0]=='('){
+            cout<<" no offset/immediate field given"<<endl;
+            exit(0);
+        }
+        else if (*it >= 48 && *it <= 57){
+            immed=0;
+            while ((*it) != '('){
+                immed = (10 * immed) + ((*it) - 48); //offset
+                it++;
+            }
+            
+            it+=2;
+            r2 =0;
+            while ((*it) != ')'){ //lb x1 100(x2)
+                r2 = 10 * r2 + ((*it) - 48);
+                it++;
+            }
+        }
+        else{                //lw x1 var1    
+            flag = 1;
+            string var;
+            stringstream dummy_inst(line);
+            dummy_inst>>var;//lw
+            dummy_inst>>var;//x1
+            new1 = "auipc " + var + " 65536";
+            new2 = uFormatCommands(new1);     //auipc x1 65536
+            dummy_inst>>var;//var1
+            auto itr2 = label.begin();  
+            while (itr2 != label.end()){ 
+                if(itr2->first==var){
+                    tpc=itr2->second;      
+                }
+                itr2++;
+            }
+            //offset_of_first_load_inst;
+            if(!ship){
+                immed = tpc-programCounter+4; 
+                ship=1;
+                offset_of_first_load_inst=immed;
+            }
+            else{
+                immed=offset_of_first_load_inst-programCounter; 
+            }
+            stringstream dummy; 
+            dummy<<hex<<immed;
+            string hexv;
+            dummy>>hexv;
+            string im=hexaToBinary(hexv);
+            im=im.substr(im.length()-12, im.length());
+            new2 = new2 + "\r\n"; //result from auipc
+            r2 = r1;
+        }
+    }
+    if(immed <-2047 && immed >=2048){
+       cout<<"Error : immediate ="<<immed<<" is out of range\n";
+       exit(0);
+    } 
+    if (instruction >> word){
+        cout << "error :"<< " : got more than three arguments." << endl;
+        exit(0);
+    }
+    if(r2<0 || r2>31 || r1<0 || r1>31){
+        cout<<"Invalid register numbers given"<<endl;
+        exit(0);
+    }  
+
+    string machine_code;
+    if(immed<0){
+       stringstream ss; 
+       ss<<hex<<immed;
+       string hexv;
+       ss>>hexv;
+       string im=hexaToBinary(hexv);
+       im=im.substr(im.length()-12, im.length());
+       machine_code+=im;
+    }
+    else{ 
+        string im = decToBinary(immed);
+        im = convertToLength12(im);
+        machine_code += im;
+    }
+    string temp;
+    temp = decToBinary(r2);
+    temp = convertToLength5(temp);
+    machine_code += temp;
+    temp = risc_code.substr(0, 3);
+    machine_code += temp;
+    temp = decToBinary(r1);
+    temp = convertToLength5(temp);
+    machine_code += temp;
+    temp = risc_code.substr(3, 7);
+    machine_code += temp;
+    machine_code = "0x" + binToHexa(machine_code);
+
+    string PC = binToHexa(decToBinary(programCounter));
+
+    machine_code = "0x" + PC + "     " + machine_code;
+    programCounter += 4;
+    if (flag){
+        machine_code = new2 + machine_code;
+    }
+    return machine_code;      
+}
