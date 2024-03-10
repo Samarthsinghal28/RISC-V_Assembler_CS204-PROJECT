@@ -328,22 +328,22 @@ string ujFormatCommands(string l)
     }
     else
     {
-    int yatch=0;
-    string lbl;
-        map<string, int>::iterator itr; 
-        for (itr = label.begin(); itr != label.end(); ++itr) { 
-        
-            
+        bool label_found = false; // Variable to track if label is found
+        string lbl;
+        int imm = 0; // Variable to store the imm offset
+
+        for (auto itr = label.begin(); itr != label.end(); ++itr) {
             stringstream ss(itr->first);
-            ss>>lbl;
-            if(lbl==imm2){
-                yatch=1;
+            ss >> lbl;
+
+            if (lbl == imm2) {
+                label_found = true;
                 imm=itr->second;
                 imm=imm-programCounter;
             }
-            
         }
-        if(yatch==0){
+
+        if (!label_found) {
             cout<<"This label "<<lbl<<"does not exist"<<endl;
             exit(0);
         }
